@@ -1,0 +1,15 @@
+[project]
+name = "fly-in"
+version = "0.1.0"
+description = "High-performance capacity-constrained multi-drone routing & simulation engine."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.2.6",
+    "pydantic>=2.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "rich>=14.0.0",
+    "pygame-ce>=2.5.0",
+    "pytest>=8.0.0"
+]
