@@ -173,9 +173,9 @@ class PygameVisualizer:
 
         # Asset loading
         self.drone_base = safe_load_image(
-            "image-from-rawpixel-id-6482170-png.png", 32, 32
+            "drone.png", 32, 32
         )
-        self.hub_base = safe_load_image("image_87cb58.png", 52, 52)
+        self.hub_base = safe_load_image("hub.png", 52, 52)
 
         self.glows: Dict[str, pygame.Surface] = {
             "start": create_glow_surface(36, self.palette.cls_start + (50,)),
