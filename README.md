@@ -34,7 +34,7 @@ Every movement step must strictly comply with zone hosting capacities, connectio
 
 ---
 
-## ⚡ Problem Statement & Constraints
+## Problem Statement & Constraints
 
 Modeling real-world multi-agent drone traffic introduces strict operational constraints:
 
