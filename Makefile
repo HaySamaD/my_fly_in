@@ -13,7 +13,7 @@ install:
 	uv sync
 
 test:
-	uv run pytest tests/
+	uv run python -m pytest tests/
 
 debug:
 	$(PYTHON) -m pdb -m src
