@@ -1,46 +1,79 @@
-"""Unit tests for MapParser module."""
-from pathlib import Path
+"""Unit tests for map syntax and semantic parsing."""
+
+from __future__ import annotations
+
 import pytest
-from src.core.exceptions import MapParseError, MapValidationError
-from src.parser.map_parser import MapParser
+
+from src.parser import MapParser, ParsingError
 
 
-def test_parse_valid_map(tmp_path: Path) -> None:
-    """Test parsing a fully valid text map file."""
-    map_content = (
-        "nb_drones: 2\n"
-        "start_hub: start 0 0\n"
-        "end_hub: goal 10 10\n"
-        "connection: start-goal\n"
-    )
-    map_file = tmp_path / "test_map.txt"
-    map_file.write_text(map_content, encoding="utf-8")
+def test_valid_map_parsing() -> None:
+    """Verify that a well-formed map parses correctly."""
+    raw_map = """
+    # Example map
+    nb_drones: 3
+    start_hub: start 0 0
+    end_hub: goal 5 5
+    hub: mid 2 2 [zone=priority max_drones=2]
+    connection: start-mid
+    connection: mid-goal
+    """
+    parser = MapParser()
+    data = parser.parse_lines(raw_map.strip().splitlines())
 
-    parser = MapParser(map_file)
-    map_obj = parser.parse()
-
-    assert len(map_obj.drones) == 2
-    assert map_obj.find_zone("start") is not None
-    assert map_obj.find_zone("goal") is not None
-
-
-def test_missing_nb_drones(tmp_path: Path) -> None:
-    """Test parser raises MapParseError when nb_drones header is missing."""
-    map_content = "start_hub: start 0 0\nend_hub: goal 10 10\n"
-    map_file = tmp_path / "bad_map.txt"
-    map_file.write_text(map_content, encoding="utf-8")
-
-    parser = MapParser(map_file)
-    with pytest.raises(MapParseError):
-        parser.parse()
+    assert data.nb_drones == 3
+    assert data.start_zone_name == "start"
+    assert data.end_zone_name == "goal"
+    assert len(data.zones) == 3
+    assert len(data.connections) == 2
+    assert data.zones["mid"].max_drones == 2
 
 
-def test_missing_hubs(tmp_path: Path) -> None:
-    """Test parser raises MapValidationError when hubs are incomplete."""
-    map_content = "nb_drones: 1\nstart_hub: start 0 0\n"
-    map_file = tmp_path / "no_goal.txt"
-    map_file.write_text(map_content, encoding="utf-8")
+def test_missing_nb_drones() -> None:
+    """Verify error when nb_drones is omitted."""
+    raw_map = """
+    start_hub: start 0 0
+    end_hub: goal 5 5
+    """
+    parser = MapParser()
+    with pytest.raises(ParsingError, match="nb_drones"):
+        parser.parse_lines(raw_map.strip().splitlines())
 
-    parser = MapParser(map_file)
-    with pytest.raises(MapValidationError):
-        parser.parse()
+
+def test_invalid_zone_name_with_dashes() -> None:
+    """Verify rejection of zone names containing dashes."""
+    raw_map = """
+    nb_drones: 2
+    start_hub: start-zone 0 0
+    end_hub: goal 5 5
+    """
+    parser = MapParser()
+    with pytest.raises(ParsingError, match="dashes"):
+        parser.parse_lines(raw_map.strip().splitlines())
+
+
+def test_duplicate_connections() -> None:
+    """Verify bidirectional duplicate connection detection."""
+    raw_map = """
+    nb_drones: 2
+    start_hub: start 0 0
+    end_hub: goal 5 5
+    connection: start-goal
+    connection: goal-start
+    """
+    parser = MapParser()
+    with pytest.raises(ParsingError, match="Duplicate connection"):
+        parser.parse_lines(raw_map.strip().splitlines())
+
+
+def test_invalid_zone_type() -> None:
+    """Verify rejection of unknown zone types."""
+    raw_map = """
+    nb_drones: 2
+    start_hub: start 0 0
+    end_hub: goal 5 5
+    hub: bonus 1 1 [zone=superfast]
+    """
+    parser = MapParser()
+    with pytest.raises(ParsingError, match="Invalid zone type"):
+        parser.parse_lines(raw_map.strip().splitlines())

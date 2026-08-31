@@ -1,33 +1,36 @@
-PYTHON = uv run python
-CACHE_DIRS = .pytest_cache .mypy_cache .uv_cache
+# Fly-in Automation Makefile
 
-.PHONY: run run-gui install test debug clean lint
+PYTHON := python3
+PIP := pip
+SRC_DIR := src
+TEST_DIR := tests
 
-run:
-	$(PYTHON) -m src data/map.txt --viz terminal
+.PHONY: all install run debug clean lint lint-strict test
 
-run-gui:
-	$(PYTHON) -m src data/map.txt --viz gui
+all: run
+
+run: install
+	$(PYTHON) main.py maps/map.txt --gui
 
 install:
-	uv sync
-
-test:
-	uv run python -m pytest tests/
+	$(PIP) install -r requirements.txt
 
 debug:
-	$(PYTHON) -m pdb -m src
+	$(PYTHON) -m pdb main.py maps/map.txt
 
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
-	find . -type f -name "*.pyo" -delete
-	@for dir in $(CACHE_DIRS); do \
-		if [ -d $$dir ]; then \
-			rm -rf $$dir; \
-		fi; \
-	done
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type d -name ".mypy_cache" -exec rm -rf {} +
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	@find . -type f -name "*.pyc" -delete
 
 lint:
-	uv run flake8 src
-	uv run mypy src --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	flake8 .
+	mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+
+lint-strict:
+	flake8 .
+	mypy . --strict
+
+test:
+	pytest $(TEST_DIR) -v
